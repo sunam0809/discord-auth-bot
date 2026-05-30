@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Discord 인증 사이트"
+version = "1.0.0"
+id = "artifacts/auth-site"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22746
+
+[services.development]
+run = "pnpm --filter @workspace/auth-site run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/auth-site", "run", "build" ]
+publicDir = "artifacts/auth-site/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22746"
+BASE_PATH = "/"

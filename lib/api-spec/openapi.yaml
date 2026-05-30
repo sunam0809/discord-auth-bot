@@ -3,20 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Discord verification bot API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Discord OAuth2 authentication
+  - name: guilds
+    description: Guild configuration and members
+  - name: recovery
+    description: Recovery key operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +29,179 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/url:
+    get:
+      operationId: getAuthUrl
+      tags: [auth]
+      summary: Get Discord OAuth2 authorization URL
+      parameters:
+        - in: query
+          name: guildId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: returnUrl
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Auth URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUrlResponse"
+
+  /auth/callback:
+    get:
+      operationId: handleDiscordCallback
+      tags: [auth]
+      summary: Discord OAuth2 callback handler
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: state
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect after auth
+
+  /guilds/{guildId}/config:
+    get:
+      operationId: getGuildConfig
+      tags: [guilds]
+      summary: Get guild verification configuration
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Guild config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuildConfig"
+        "404":
+          description: Not found
+    put:
+      operationId: upsertGuildConfig
+      tags: [guilds]
+      summary: Create or update guild configuration
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuildConfigInput"
+      responses:
+        "200":
+          description: Updated config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuildConfig"
+
+  /guilds/{guildId}/members:
+    get:
+      operationId: listGuildMembers
+      tags: [guilds]
+      summary: Get verified members of a guild
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of verified members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberListResponse"
+
+  /guilds/{guildId}/stats:
+    get:
+      operationId: getGuildStats
+      tags: [guilds]
+      summary: Get guild verification statistics
+      parameters:
+        - in: path
+          name: guildId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuildStats"
+
+  /recovery-keys:
+    post:
+      operationId: createRecoveryKey
+      tags: [recovery]
+      summary: Create a recovery key for a guild
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecoveryKeyInput"
+      responses:
+        "201":
+          description: Recovery key created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryKey"
+
+  /recovery-keys/{key}/use:
+    post:
+      operationId: useRecoveryKey
+      tags: [recovery]
+      summary: Use a recovery key to reinvite all verified members
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UseRecoveryKeyInput"
+      responses:
+        "200":
+          description: Recovery result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryResult"
+        "404":
+          description: Key not found or already used
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +212,107 @@ components:
       required:
         - status
 
+    AuthUrlResponse:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+
+    GuildConfig:
+      type: object
+      required: [guildId, createdAt]
+      properties:
+        guildId:
+          type: string
+        roleId:
+          type: ["string", "null"]
+        webhookUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    GuildConfigInput:
+      type: object
+      properties:
+        roleId:
+          type: ["string", "null"]
+        webhookUrl:
+          type: ["string", "null"]
+
+    VerifiedMember:
+      type: object
+      required: [id, discordId, username, guildId, verifiedAt]
+      properties:
+        id:
+          type: integer
+        discordId:
+          type: string
+        username:
+          type: string
+        avatar:
+          type: ["string", "null"]
+        guildId:
+          type: string
+        verifiedAt:
+          type: string
+
+    MemberListResponse:
+      type: object
+      required: [members, total]
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/VerifiedMember"
+        total:
+          type: integer
+
+    GuildStats:
+      type: object
+      required: [totalVerified, todayVerified, thisWeekVerified]
+      properties:
+        totalVerified:
+          type: integer
+        todayVerified:
+          type: integer
+        thisWeekVerified:
+          type: integer
+
+    RecoveryKeyInput:
+      type: object
+      required: [guildId]
+      properties:
+        guildId:
+          type: string
+
+    RecoveryKey:
+      type: object
+      required: [key, guildId, createdAt]
+      properties:
+        key:
+          type: string
+        guildId:
+          type: string
+        usedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    UseRecoveryKeyInput:
+      type: object
+      required: [targetGuildId]
+      properties:
+        targetGuildId:
+          type: string
+
+    RecoveryResult:
+      type: object
+      required: [invited, failed, total]
+      properties:
+        invited:
+          type: integer
+        failed:
+          type: integer
+        total:
+          type: integer
