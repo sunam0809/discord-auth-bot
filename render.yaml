@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: discord-auth-bot
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: >
+      pnpm install &&
+      pnpm --filter @workspace/api-spec run codegen &&
+      pnpm run typecheck:libs &&
+      pnpm --filter @workspace/auth-site run build &&
+      pnpm --filter @workspace/api-server run build
+    startCommand: node artifacts/api-server/dist/index.mjs
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: NEON_DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
