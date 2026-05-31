@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Particles } from "@/components/Particles";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle, RotateCcw } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 export default function Failed() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -28,18 +26,11 @@ export default function Failed() {
 
         <h1 className="text-3xl font-bold mb-4">인증 실패</h1>
         
-        <div className="bg-background/50 border border-destructive/20 rounded-xl p-4 mb-8">
+        <div className="bg-background/50 border border-destructive/20 rounded-xl p-4">
           <p className="text-muted-foreground font-mono text-sm break-words">
             {errorMsg}
           </p>
         </div>
-
-        <Link href="/" className="w-full block">
-          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12">
-            <RotateCcw className="w-4 h-4 mr-2" />
-            다시 시도하기 (Retry)
-          </Button>
-        </Link>
       </motion.div>
     </div>
   );
