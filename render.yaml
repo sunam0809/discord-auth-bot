@@ -27,3 +27,5 @@ services:
         sync: false
       - key: SESSION_SECRET
         sync: false
+      - key: BOT_BASE_URL
+        value: https://discord-auth-bot-np09.onrender.com
