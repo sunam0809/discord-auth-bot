@@ -35,9 +35,10 @@ async function checkPermission(interaction: ChatInputCommandInteraction): Promis
 }
 
 const BASE_URL = (() => {
+  if (process.env.BOT_BASE_URL) return process.env.BOT_BASE_URL;
   const domains = process.env.REPLIT_DOMAINS;
   if (domains) return `https://${domains.split(",")[0]}`;
-  return process.env.BOT_BASE_URL || "https://your-app.replit.app";
+  return "https://discord-auth-bot-np09.onrender.com";
 })();
 
 const commands = [
