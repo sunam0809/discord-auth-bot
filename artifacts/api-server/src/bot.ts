@@ -8,6 +8,7 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  PermissionFlagsBits,
   ChannelType,
   type ChatInputCommandInteraction,
   type TextChannel,
@@ -27,6 +28,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("인증창")
     .setDescription("인증 버튼이 포함된 임베드를 이 채널에 전송합니다")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .addStringOption((opt) =>
       opt.setName("제목").setDescription("인증 임베드 제목").setRequired(false),
     )
@@ -36,11 +38,13 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName("복구키생성")
-    .setDescription("현재 서버의 복구 키를 생성합니다 (인증된 유저 목록 저장)"),
+    .setDescription("현재 서버의 복구 키를 생성합니다 (인증된 유저 목록 저장)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   new SlashCommandBuilder()
     .setName("복구키사용")
     .setDescription("복구 키를 사용하여 이전 서버의 인증된 유저를 초대합니다")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .addStringOption((opt) =>
       opt.setName("키").setDescription("복구 키 (예: A1B2C3D4E5F6G7H8)").setRequired(true),
     ),
