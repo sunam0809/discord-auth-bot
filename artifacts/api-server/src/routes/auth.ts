@@ -7,10 +7,13 @@ const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET!;
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN!;
 
-function getRedirectUri(req: any): string {
-  const host = req.headers["x-forwarded-host"] || req.headers.host;
-  const proto = req.headers["x-forwarded-proto"] || "https";
-  return `${proto}://${host}/api/auth/callback`;
+function getRedirectUri(_req?: unknown): string {
+  const base =
+    process.env.BOT_BASE_URL ||
+    (process.env.REPLIT_DOMAINS
+      ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+      : "");
+  return `${base}/api/auth/callback`;
 }
 
 router.get("/auth/url", async (req, res): Promise<void> => {
