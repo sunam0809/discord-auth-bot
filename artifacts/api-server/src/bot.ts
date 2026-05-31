@@ -45,6 +45,12 @@ const commands = [
     .setName("인증창")
     .setDescription("인증 버튼이 포함된 임베드를 이 채널에 전송합니다")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .addRoleOption((opt) =>
+      opt.setName("역할").setDescription("인증 완료 시 부여할 역할").setRequired(false),
+    )
+    .addStringOption((opt) =>
+      opt.setName("웹훅").setDescription("인증 알림을 받을 웹훅 URL").setRequired(false),
+    )
     .addStringOption((opt) =>
       opt.setName("제목").setDescription("인증 임베드 제목").setRequired(false),
     )
@@ -84,6 +90,29 @@ async function handleVerificationPanel(interaction: ChatInputCommandInteraction)
     interaction.options.getString("설명") ||
     "아래 버튼을 클릭하여 인증을 완료하세요.\n인증 후 서버 멤버 역할이 부여됩니다.";
 
+  const role = interaction.options.getRole("역할");
+  const webhookUrl = interaction.options.getString("웹훅");
+
+  // 역할 또는 웹훅이 설정된 경우 DB에 저장
+  if (role || webhookUrl) {
+    try {
+      // 기존 설정 조회
+      const existing = await fetch(`${BASE_URL}/api/guilds/${guildId}/config`);
+      const existingData = existing.ok ? await existing.json() as { roleId?: string; webhookUrl?: string } : {};
+
+      await fetch(`${BASE_URL}/api/guilds/${guildId}/config`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roleId: role ? role.id : (existingData.roleId ?? null),
+          webhookUrl: webhookUrl ?? (existingData.webhookUrl ?? null),
+        }),
+      });
+    } catch (err) {
+      logger.warn({ err }, "길드 설정 저장 실패");
+    }
+  }
+
   const authUrl = `${BASE_URL}/?guildId=${guildId}`;
 
   const embed = new EmbedBuilder()
@@ -104,7 +133,12 @@ async function handleVerificationPanel(interaction: ChatInputCommandInteraction)
       .setEmoji("✅"),
   );
 
-  await interaction.reply({ content: "인증 패널을 생성했습니다!", ephemeral: true });
+  // 설정 완료 메시지 구성
+  const settingLines: string[] = ["✅ 인증 패널을 생성했습니다!"];
+  if (role) settingLines.push(`🎭 인증 역할: <@&${role.id}>`);
+  if (webhookUrl) settingLines.push(`🔔 웹훅 알림: 설정 완료`);
+
+  await interaction.reply({ content: settingLines.join("\n"), ephemeral: true });
 
   const channel = interaction.channel as TextChannel;
   await channel.send({ embeds: [embed], components: [row] });
