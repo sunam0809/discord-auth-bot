@@ -18,6 +18,22 @@ import { logger } from "./lib/logger";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN!;
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
 
+// 명령어 사용 허가된 유저 ID 목록
+const ALLOWED_USER_IDS = new Set([
+  "1368030640628301865",
+]);
+
+async function checkPermission(interaction: ChatInputCommandInteraction): Promise<boolean> {
+  if (!ALLOWED_USER_IDS.has(interaction.user.id)) {
+    await interaction.reply({
+      content: "❌ 이 명령어를 사용할 권한이 없습니다.",
+      ephemeral: true,
+    });
+    return false;
+  }
+  return true;
+}
+
 const BASE_URL = (() => {
   const domains = process.env.REPLIT_DOMAINS;
   if (domains) return `https://${domains.split(",")[0]}`;
@@ -203,12 +219,15 @@ export async function startBot() {
     const { commandName } = interaction;
 
     try {
+      const cmd = interaction as ChatInputCommandInteraction;
+      if (!(await checkPermission(cmd))) return;
+
       if (commandName === "인증창") {
-        await handleVerificationPanel(interaction as ChatInputCommandInteraction);
+        await handleVerificationPanel(cmd);
       } else if (commandName === "복구키생성") {
-        await handleCreateRecoveryKey(interaction as ChatInputCommandInteraction);
+        await handleCreateRecoveryKey(cmd);
       } else if (commandName === "복구키사용") {
-        await handleUseRecoveryKey(interaction as ChatInputCommandInteraction);
+        await handleUseRecoveryKey(cmd);
       }
     } catch (err) {
       logger.error({ err, commandName }, "Command handler error");
